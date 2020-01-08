@@ -5,7 +5,8 @@ using namespace std;
 typedef long long D;
 #define ll long long
 D M_ = 1000000007;
-D N_ = 0;
+D N_ = 2113929217LL;
+
 // N_ >= M_ && N_ = kn+1
 
 bool prime(ll n) {
@@ -16,14 +17,14 @@ bool prime(ll n) {
 	return true;
 }
 
-ll pot(ll n, ll k, ll m) {
+ll pot(const ll n, const ll k, const ll m) {
 	if (!k) return 1;
 	if (k & 1) return (n * pot(n, k - 1, m)) % m;
 	ll u = pot(n, k / 2, m);
 	return (u * u) % m;
 }
 
-ll inv(ll a, ll n) {
+ll inv(const ll a, const ll n) {
 	return pot(a, n - 2, n);
 }
 
@@ -38,7 +39,7 @@ ll generator(ll n) {
 	}
 	if (nn != 1) fs.push_back(nn);
 
-	for (ll i = 2;; i++) {
+	for (ll i = 2;; i++) { 
 		if (pot(i, n - 1, n) == 1) {
 			bool g = true;
 			for (ll f : fs) {
@@ -54,32 +55,26 @@ ll generator(ll n) {
 	}
 }
 
-vector<D> ntt_calc(vector<D> a, ll w0) {
+void ntt_calc(vector<D> &a, ll w0) {
 	int n = a.size();
-	if (n == 1) return a;
-
+	if (n == 1) return;
 	vector<D> even(n / 2);
 	vector<D> odd(n / 2);
 	for (int i = 0; i < n / 2; i++) {
 		even[i] = a[2 * i];
 		odd[i] = a[2 * i + 1];
 	}
-	even = ntt_calc(even, (w0 * w0) % N_);
-	odd = ntt_calc(odd, (w0 * w0) % N_);
+	ntt_calc(even, (w0 * w0) % N_);
+	ntt_calc(odd, (w0 * w0) % N_);
 	D w = 1;
 	for (int i = 0; i < n / 2; i++) {
 		a[i] = even[i] + w * odd[i];
 		a[i] %= N_;
-		a[i] += N_;
-		a[i] %= N_;
 		a[i + n / 2] = even[i] - w * odd[i];
-		a[i + n / 2] %= N_;
-		a[i + n / 2] += N_;
 		a[i + n / 2] %= N_;
 		w *= w0;
 		w %= N_;
 	}
-	return a;
 }
 
 vector<D> ntt(vector<D> a, vector<D> b) {
@@ -101,18 +96,17 @@ vector<D> ntt(vector<D> a, vector<D> b) {
 	ll g = generator(N_);
 	ll w = pot(g, k, N_);
 
-	aa = ntt_calc(aa, w);
-	bb = ntt_calc(bb, w);
+	ntt_calc(aa, w);
+	ntt_calc(bb, w);
 	vector<D> c(len, 0);
 
 	for (int i = 0; i < len; i++) {
 		c[i] = (aa[i] * bb[i]);
 		c[i] %= N_;
 	}
-	c = ntt_calc(c, inv(w, N_));
+	ntt_calc(c, inv(w, N_));
 
 	for (ll& i : c) {
-		i %= N_;
 		i *= inv((ll)c.size(), N_);
 		i %= N_;
 		i += N_;
@@ -123,12 +117,20 @@ vector<D> ntt(vector<D> a, vector<D> b) {
 }
 
 int main() {
-	vector<ll> a = {1, 2, 3, 4, 5};
-	vector<ll> b = {5, 4, 3, 2, 1};
+	int n;
+	cin>>n;
+	vector<ll> a(n);
+	vector<ll> b(n);
+	for (int i = 0; i < n; i++) {
+		a[i] = b[i] = i;
+	}
 	vector<ll> c = ntt(a, b);
 	// expected output: 5 14 26 40 55 40 26 14 5
-	for (long long i : c) {
-		cout<<i<<" ";
+	int correct = 0;
+	for (ll i = 0; i < n; i++) {
+		if (6 * c[i] != (i * i * i - i)) {
+			correct++;
+		}
 	}
-	cout<<endl;
+	cout<<correct<<endl;
 }
