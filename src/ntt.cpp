@@ -55,25 +55,24 @@ ll generator(ll n) {
 	}
 }
 
-void ntt_calc(vector<D> &a, ll w0) {
+void ntt_calc(vector<D> &a, D w0) {
 	int n = a.size();
 	if (n == 1) return;
-	vector<D> even(n / 2);
-	vector<D> odd(n / 2);
-	for (int i = 0; i < n / 2; i++) {
-		even[i] = a[2 * i];
-		odd[i] = a[2 * i + 1];
-	}
-	ntt_calc(even, (w0 * w0) % N_);
-	ntt_calc(odd, (w0 * w0) % N_);
-	D w = 1;
-	for (int i = 0; i < n / 2; i++) {
-		a[i] = even[i] + w * odd[i];
-		a[i] %= N_;
-		a[i + n / 2] = even[i] - w * odd[i];
-		a[i + n / 2] %= N_;
-		w *= w0;
-		w %= N_;
+	
+	vector<D> b(n);
+	for (int l = 2; l <= n; l *= 2) {
+		int s = n / l;
+		D ww = pot(w0, s, N_);
+		for (int i = 0; i < s; i++) {
+			D w = 1;
+			for (int j = 0; j < l / 2; j++) {
+				b[i+j*s] = a[i+2*j*s] + w * a[i+2*j*s+s];
+				b[i+j*s+n/2] = a[i+2*j*s] - w * a[i+2*j*s+s];
+				w *= ww;
+				w %= N_;
+			}
+		}
+		swap(a, b);
 	}
 }
 
