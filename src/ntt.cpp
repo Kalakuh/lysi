@@ -5,8 +5,8 @@ using namespace std;
 typedef long long D;
 #define ll long long
 D M_ = 1000000007;
-D N_ = 2113929217LL;
-
+D N_ = 0;
+D W_ = 0;
 // N_ >= M_ && N_ = kn+1
 
 bool prime(ll n) {
@@ -90,21 +90,23 @@ vector<D> ntt(vector<D> a, vector<D> b) {
 		bb[i] = b[i];
 	}
 
-	ll k = (M_ - 1) / (ll)len + 1;
-	while (!prime(k * (ll)len + 1)) k++; 
-	N_ = k * len + 1;
-	ll g = generator(N_);
-	ll w = pot(g, k, N_);
-
-	ntt_calc(aa, w);
-	ntt_calc(bb, w);
+	if (!N_) {
+		ll k = (M_ - 1) / (ll)len + 1;
+		while (!prime(k * (ll)len + 1)) k++; 
+		N_ = k * len + 1;
+		ll g = generator(N_);
+		W_ = pot(g, k, N_);
+	}
+	
+	ntt_calc(aa, W_);
+	ntt_calc(bb, W_);
 	vector<D> c(len, 0);
 
 	for (int i = 0; i < len; i++) {
 		c[i] = (aa[i] * bb[i]);
 		c[i] %= N_;
 	}
-	ntt_calc(c, inv(w, N_));
+	ntt_calc(c, inv(W_, N_));
 
 	for (ll& i : c) {
 		i *= inv((ll)c.size(), N_);
