@@ -23,7 +23,7 @@ ll crt(vector<ll> a, vector<ll> m, ll p) {
 		X %= p;
 	}
 	for (int i = 0; i < n; i++) {
-		ll t = (a[i] * X / m[i]) % p;
+		ll t = (a[i] * (X / m[i])) % p;
 		t *= inv(X / m[i], m[i]);
 		x += t;
 		x %= p;
