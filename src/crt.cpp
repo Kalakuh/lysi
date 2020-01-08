@@ -22,14 +22,16 @@ ll crt(vector<ll> a, vector<ll> m, ll p) {
 		X *= k;
 	}
 	for (int i = 0; i < n; i++) {
-		ll t = (a[i] * (X / m[i])) % p;
+		ll t = (a[i] * (X / m[i])) % X;
 		t *= inv(X / m[i], m[i]);
 		x += t;
-		x %= p;
+		x %= X;
 	}
+	x %= p;
 	return x;
 }
 
 int main() {
 	cout<<crt({3, 4, 2}, {5, 7, 3}, 1000000007)<<endl;
+	cout<<crt({3, 3, 3}, {5, 7, 11}, 1000000007)<<endl;
 }

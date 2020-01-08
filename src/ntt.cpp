@@ -2,20 +2,8 @@
 
 using namespace std;
 
-typedef long long D;
-#define ll long long
-D M_ = 1000000007;
-D N_ = 0;
-D W_ = 0;
-// N_ >= M_ && N_ = kn+1
-
-bool prime(ll n) {
-	if (n < 2) return false;
-	for (ll i = 2; i * i <= n; i++) {
-		if (n % i == 0) return false;
-	}
-	return true;
-}
+typedef __int128 D;
+typedef D ll;
 
 ll pot(const ll n, const ll k, const ll m) {
 	if (!k) return 1;
@@ -25,113 +13,98 @@ ll pot(const ll n, const ll k, const ll m) {
 }
 
 ll inv(const ll a, const ll n) {
-	return pot(a, n - 2, n);
+	return pot(a % n, n - 2, n);
 }
 
-ll generator(ll n) {
-	vector<ll> fs;
-	ll nn = n - 1;
-	for (ll i = 2; i * i <= nn; i++) {
-		if (nn % i == 0) {
-			fs.push_back(i);
-			while (nn % i == 0) nn /= i;
-		}
+ll crt(vector<ll> a, vector<ll> m, ll p) {
+	int n = a.size();
+	ll x = 0;
+	ll X = 1;
+	for (ll k : m) {
+		X *= k;
 	}
-	if (nn != 1) fs.push_back(nn);
-
-	for (ll i = 2;; i++) { 
-		if (pot(i, n - 1, n) == 1) {
-			bool g = true;
-			for (ll f : fs) {
-				if (pot(i, (n - 1) / f, n) == 1) {
-					g = false;
-					break;
-				}
-			}
-			if (g) {
-				return i;
-			}
-		}
+	for (int i = 0; i < n; i++) {
+		ll t = (a[i] * (X / m[i])) % X;
+		t *= inv(X / m[i], m[i]);
+		x += t;
+		x %= X;
 	}
+	x %= p;
+	return x;
 }
 
-void ntt_calc(vector<D> &a, D w0) {
+void ntt_calc(vector<D> &a, D w0, D p) {
 	int n = a.size();
 	if (n == 1) return;
 	
 	vector<D> b(n);
 	for (int l = 2; l <= n; l *= 2) {
 		int s = n / l;
-		D ww = pot(w0, s, N_);
-		for (int i = 0; i < s; i++) {
-			D w = 1;
-			for (int j = 0; j < l / 2; j++) {
+		D ww = pot(w0, s, p);
+		D w = 1;
+		for (int j = 0; j < l / 2; j++) {
+			for (int i = 0; i < s; i++) {
 				b[i+j*s] = a[i+2*j*s] + w * a[i+2*j*s+s];
 				b[i+j*s+n/2] = a[i+2*j*s] - w * a[i+2*j*s+s];
-				w *= ww;
-				w %= N_;
 			}
+			w *= ww;
+			w %= p;
 		}
+		for (int i = 0; i < n; i++) b[i] %= p;
 		swap(a, b);
 	}
 }
 
-vector<D> ntt(vector<D> a, vector<D> b) {
+const vector<D> ms = {1004535809, 1092616193, 1161822209};
+vector<D> ntt(vector<D> a, vector<D> b, D p) {
+	int ol = (int)a.size() + (int)b.size() - 1;
 	int len = 31 - __builtin_clz((int)a.size() + (int)b.size() - 1);
 	if ((1<<len) < (int)a.size() + (int)b.size() - 1) len++;
 	len = 1<<len;
 	vector<D> aa(len, 0);
 	vector<D> bb(len, 0);
-	for (int i = 0; i < a.size(); i++) {
-		aa[i] = a[i];
-	}
-	for (int i = 0; i < b.size(); i++) {
-		bb[i] = b[i];
-	}
+	vector<D> c[3];
+	c[0] = c[1] = c[2] = aa;
+	for (int mi = 0; mi < ms.size(); mi++) {
+		D md = ms[mi];
+		for (int i = 0; i < len; i++) aa[i] = bb[i] = 0;
+		for (int i = 0; i < a.size(); i++) {
+			aa[i] = a[i];
+		}
+		for (int i = 0; i < b.size(); i++) {
+			bb[i] = b[i];
+		}
 
-	if (!N_) {
-		ll k = (M_ - 1) / (ll)len + 1;
-		while (!prime(k * (ll)len + 1)) k++; 
-		N_ = k * len + 1;
-		ll g = generator(N_);
-		W_ = pot(g, k, N_);
-	}
-	
-	ntt_calc(aa, W_);
-	ntt_calc(bb, W_);
-	vector<D> c(len, 0);
+		D w0 = pot(3, (md - 1) / (D)len, md);
+		
+		ntt_calc(aa, w0, md);
+		ntt_calc(bb, w0, md);
 
-	for (int i = 0; i < len; i++) {
-		c[i] = (aa[i] * bb[i]);
-		c[i] %= N_;
-	}
-	ntt_calc(c, inv(W_, N_));
+		for (int i = 0; i < len; i++) {
+			c[mi][i] = (aa[i] * bb[i]);
+			c[mi][i] %= md;
+		}
+		ntt_calc(c[mi], inv(w0, md), md);
 
-	for (ll& i : c) {
-		i *= inv((ll)c.size(), N_);
-		i %= N_;
-		i += N_;
-		i %= N_;
+		for (ll& i : c[mi]) {
+			i *= inv((ll)c[mi].size(), md);
+			i %= md;
+			i += md;
+			i %= md;
+		}
 	}
-	while (c.back() == 0) c.pop_back();
-	return c;
+	vector<D> d(ol, 0);
+	for (int i = 0; i < ol; i++) {
+		d[i] = crt({c[0][i], c[1][i], c[2][i]}, ms, p);
+	}
+	return d;
 }
 
 int main() {
-	int n;
-	cin>>n;
-	vector<ll> a(n);
-	vector<ll> b(n);
-	for (int i = 0; i < n; i++) {
-		a[i] = b[i] = i;
-	}
-	vector<ll> c = ntt(a, b);
+	vector<ll> a = {5, 4, 3, 2, 1};
+	vector<ll> b = {1, 2, 3, 4, 5};
+	vector<ll> c = ntt(a, b, 13313);
 	// expected output: 5 14 26 40 55 40 26 14 5
-	int correct = 0;
-	for (ll i = 0; i < n; i++) {
-		if (6 * c[i] != (i * i * i - i)) {
-			correct++;
-		}
-	}
-	cout<<correct<<endl;
+	for (auto i : c) cout<<(long long)i<<" ";
+	cout<<endl;
 }
